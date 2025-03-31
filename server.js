@@ -1,6 +1,8 @@
 const express = require("express");
-const { HfInference } = require("@huggingface/inference");
 const storage = require("node-persist");
+const { HfInference } = require("@huggingface/inference");
+const { firestore } = require("./firebase/config");
+const { collection, addDoc } = require("firebase/firestore");
 require("dotenv").config();
 
 const app = express();
@@ -27,26 +29,38 @@ const rateLimiter = async () => {
 };
 
 app.post("/summarize", async (req, res) => {
-  const {text} = req.body;
+  const { text } = req.body;
   if (!text) {
-    return res.status(400).json({"error":"Text is required for summarization."});
+    return res.status(400).json({ "error": "Text is required for summarization." });
   }
   if (!(await rateLimiter())) {
-    return res.status(429).json({"error":"Rate limit exceeded. Try again after 24 hours."});
+    return res.status(429).json({ "error": "Rate limit exceeded. Try again after 24 hours." });
   }
   try {
     const response = await inference.textGeneration({
-      model:"Finnish-NLP/Ahma-3B-Instruct",
-      inputs:text,
-      parameters:{
-        max_new_tokens:200,
-        temperature:0.5,
-        repetition_penalty:1.2
-      }
+      model: "Finnish-NLP/Ahma-3B-Instruct",
+      inputs: text,
+      parameters: {
+        max_new_tokens: 200,
+        temperature: 0.5,
+        repetition_penalty: 1.2,
+      },
     });
-    res.json({"summary":response.generated_text || "No summary available."});
+
+    const generatedText = response.generated_text || "No summary available.";
+
+    const docRef = await addDoc(collection(firestore, "summaries"), {
+      input: text,
+      summary: generatedText,
+      timestamp: new Date(),
+    });
+
+    console.log("Document written with ID: ", docRef.id);
+
+    res.json({ "message": "Summary saved to Firestore successfully!", "documentId": docRef.id });
   } catch (error) {
-    res.status(500).json({"error":"Error processing text."});
+    console.error("Error writing to Firestore:", error);
+    res.status(500).json({ "error": "Error processing text or saving to Firestore." });
   }
 });
 
