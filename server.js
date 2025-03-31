@@ -2,7 +2,7 @@ const express = require("express");
 const storage = require("node-persist");
 const { HfInference } = require("@huggingface/inference");
 const { firestore } = require("./firebase/config");
-const { collection, addDoc } = require("firebase/firestore");
+const { collection, getDocs, query, orderBy, limit } = require("firebase/firestore");
 require("dotenv").config();
 
 const app = express();
@@ -28,13 +28,42 @@ const rateLimiter = async () => {
   }
 };
 
+app.get("/latest-summary", async (req, res) => {
+  try {
+    const summariesCollection = collection(firestore, "summaries");
+    const querySnapshot = await getDocs(
+      query(summariesCollection, orderBy("timestamp", "desc"), limit(1))
+    );
+
+    if (querySnapshot.empty) {
+      return res.status(404).json({ error: "No entries found in the database." });
+    }
+
+    const latestDoc = querySnapshot.docs[0].data();
+
+    let cleanedSummary = latestDoc.summary;
+    if (cleanedSummary.startsWith(latestDoc.input)) {
+      cleanedSummary = cleanedSummary.slice(latestDoc.input.length).trim();
+    }
+
+    res.json({
+      summary: cleanedSummary,
+      timestamp: latestDoc.timestamp.toDate(),
+    });
+  } catch (error) {
+    console.error("Error fetching the latest summary:", error);
+    res.status(500).json({ error: "Error fetching the latest summary from Firestore." });
+  }
+});
+
+
 app.post("/summarize", async (req, res) => {
   const { text } = req.body;
   if (!text) {
-    return res.status(400).json({ "error": "Text is required for summarization." });
+    return res.status(400).json({"error": "Text is required for summarization."});
   }
   if (!(await rateLimiter())) {
-    return res.status(429).json({ "error": "Rate limit exceeded. Try again after 24 hours." });
+    return res.status(429).json({"error": "Rate limit exceeded. Try again after 24 hours."});
   }
   try {
     const response = await inference.textGeneration({
@@ -57,10 +86,10 @@ app.post("/summarize", async (req, res) => {
 
     console.log("Document written with ID: ", docRef.id);
 
-    res.json({ "message": "Summary saved to Firestore successfully!", "documentId": docRef.id });
+    res.json({"message": "Summary saved to Firestore successfully!", "documentId": docRef.id});
   } catch (error) {
     console.error("Error writing to Firestore:", error);
-    res.status(500).json({ "error": "Error processing text or saving to Firestore." });
+    res.status(500).json({"error": "Error processing text or saving to Firestore."});
   }
 });
 
