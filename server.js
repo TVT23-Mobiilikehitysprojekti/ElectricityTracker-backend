@@ -143,6 +143,19 @@ app.get("/weather", async (req, res) => {
   }
 });
 
+router.get("/news", async (req, res) => {
+    const NEWS_API_KEY = process.env.NEWSDATA_KEY;
+    try {
+        const response = await axios.get(`https://newsdata.io/api/1/news?apikey=${NEWS_API_KEY}&q=electricity&country=fi`);
+        
+        res.json(response.data.results);
+    } catch (error) {
+        console.error("Error fetching news:", error.message);
+        res.status(500).json({error: "Failed to fetch news"});
+    }
+});
+
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
