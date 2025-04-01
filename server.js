@@ -1,5 +1,6 @@
 const express = require("express");
 const storage = require("node-persist");
+const axios = require("axios");
 const { HfInference } = require("@huggingface/inference");
 const { firestore } = require("./firebase/config");
 const { collection, getDocs, query, orderBy, limit } = require("firebase/firestore");
@@ -90,6 +91,55 @@ app.post("/summarize", async (req, res) => {
   } catch (error) {
     console.error("Error writing to Firestore:", error);
     res.status(500).json({"error": "Error processing text or saving to Firestore."});
+  }
+});
+
+app.get('/location', async (req, res) => {
+  const {latitude, longitude} = req.query;
+  const GEOAPIFY_API_KEY = process.env.GEOAPIFY_KEY;
+
+  if (!latitude || !longitude) {
+      return res.status(400).json({error: "Latitude and longitude are required"});
+  }
+
+  const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${GEOAPIFY_API_KEY}`;
+
+  try {
+      const response = await axios.get(url);
+      const cityName = response.data.features[0]?.properties.city || "Unknown city";
+      res.json({city: cityName});
+  } catch (error) {
+      console.error("Error fetching reverse geocode data:", error);
+      res.status(500).json({error: "Error fetching reverse geocode data"});
+  }
+});
+
+app.get("/weather", async (req, res) => {
+  const cityName = req.query.city;
+  const WEATHER_API_KEY = process.env.OPENWEATHER_KEY;
+
+  const fetchWeather = async (cityName) => {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${WEATHER_API_KEY}`;
+
+    try {
+      const response = await axios.get(url);
+      return {
+        temperature: (response.data.main.temp - 273.15).toFixed(2),
+        windSpeed: response.data.wind.speed,
+        weather: response.data.weather[0].description,
+        city: cityName,
+      };
+    } catch (error) {
+      console.error("Error fetching weather:", error);
+      throw new Error("Error fetching weather data");
+    }
+  };
+
+  try {
+    const weatherData = await fetchWeather(cityName);
+    res.status(200).json(weatherData);
+  } catch (error) {
+    res.status(500).json({error: error.message});
   }
 });
 
