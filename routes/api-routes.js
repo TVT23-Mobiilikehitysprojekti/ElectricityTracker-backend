@@ -46,7 +46,9 @@ router.get("/weather", async (req, res) => {
     try {
       const response = await axios.get(url);
       return {
-        temperature: (response.data.main.temp - 273.15).toFixed(2),
+        temperature: Number((response.data.main.temp - 273.15).toFixed(2)),
+        temp_max: Number((response.data.main.temp_max - 273.15).toFixed(2)),
+        temp_min: Number((response.data.main.temp_min - 273.15).toFixed(2)),
         windSpeed: response.data.wind.speed,
         weather: response.data.weather[0].description,
         city: cityName,

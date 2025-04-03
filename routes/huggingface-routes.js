@@ -48,7 +48,7 @@ router.post("/summarize", async (req, res) => {
       model: "Finnish-NLP/Ahma-3B-Instruct",
       inputs: text,
       parameters: {
-        max_new_tokens: 200,
+        max_new_tokens: 500,
         temperature: 0.5,
         repetition_penalty: 1.2,
       },
