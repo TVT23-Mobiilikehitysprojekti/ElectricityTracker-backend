@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const { cities } = require("../utils/weatherdata");
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.get("/weather", async (req, res) => {
   const WEATHER_API_KEY = process.env.OPENWEATHER_KEY;
 
   if (!city) {
-    return res.status(400).json({error: "City name is required."});
+    return res.status(400).json({ error: "City name is required." });
   }
 
   const fetchWeather = async (cityName) => {
@@ -47,8 +48,8 @@ router.get("/weather", async (req, res) => {
       const response = await axios.get(url);
       return {
         temperature: Number((response.data.main.temp - 273.15).toFixed(2)),
-        temp_max: Number((response.data.main.temp_max - 273.15).toFixed(2)),
-        temp_min: Number((response.data.main.temp_min - 273.15).toFixed(2)),
+        tempMax: Number((response.data.main.temp_max - 273.15).toFixed(2)),
+        tempMin: Number((response.data.main.temp_min - 273.15).toFixed(2)),
         windSpeed: response.data.wind.speed,
         weather: response.data.weather[0].description,
         city: cityName,
@@ -61,6 +62,15 @@ router.get("/weather", async (req, res) => {
 
   try {
     const weatherData = await fetchWeather(city);
+
+    cities.forEach((item) => {
+      if (item.name === city) {
+        item.temperature = weatherData.temperature;
+      }
+    });
+
+    console.log(cities);
+
     res.status(200).json(weatherData);
   } catch (error) {
     handleError(res, error, "Error fetching weather data.");
