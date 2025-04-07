@@ -3,6 +3,7 @@ const { firestore } = require("../firebase/config");
 const { collection, getDocs, query, orderBy, limit, addDoc } = require("firebase/firestore");
 const { HfInference } = require("@huggingface/inference");
 const storage = require("node-persist");
+const promptText = require("../utils/prompt");
 
 const router = express.Router();
 
@@ -32,15 +33,15 @@ const rateLimiter = async () => {
   }
 };
 
-router.post("/summarize", async (req, res) => {
-  const { text } = req.body;
+router.get("/summarize", async (req, res) => {
+  const { text } = promptText;
 
   if (!text) {
-    return res.status(400).json({error: "Text is required for summarization."});
+    return res.status(400).json({ error: "Text is required for summarization." });
   }
 
   if (!(await rateLimiter())) {
-    return res.status(429).json({error: "Rate limit exceeded. Try again after 24 hours."});
+    return res.status(429).json({ error: "Rate limit exceeded. Try again after 24 hours." });
   }
 
   try {
@@ -69,7 +70,7 @@ router.post("/summarize", async (req, res) => {
     });
   } catch (error) {
     console.error("Error during summarization:", error);
-    res.status(500).json({error: "Error processing text or saving to Firestore."});
+    res.status(500).json({ error: "Error processing text or saving to Firestore." });
   }
 });
 
