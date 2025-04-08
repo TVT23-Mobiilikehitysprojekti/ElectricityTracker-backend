@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const apiroutes = require("./routes/api-routes");
 const huggingfaceroutes = require("./routes/huggingface-routes");
+const voteroutes = require("./routes/vote-routes");
 
 const app = express();
 app.use(express.json());
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/api", apiroutes);
 app.use("/huggingface", huggingfaceroutes);
+app.use("/vote", voteroutes)
 
 const PORT = 3000;
 app.listen(PORT, () => {
