@@ -6,7 +6,7 @@ function addTextToPromptData(newText) {
   promptDataArray.push(newText);
 }
 
-async function buildPrompt(prices) {
+async function buildPrompt(prices, pricesTrend) {
   try {
     await fetchWeatherForCities();
     const { freezingTemperatures, windSpeedCategory } = analyzeWeather();
@@ -39,7 +39,7 @@ async function buildPrompt(prices) {
 
     const promptData = promptDataArray.join(" ");
     return {
-      text: `Pörssisähkön hinta on tällä hetkellä ${prices}. Huomioi seuraavat tekijät: ${promptData} Ottaen huomioon nämä tekijät, selitä, miksi sähkön hinta on ${prices} ja miten ne voivat vaikuttaa markkinoiden tilanteeseen. Muista, että hinta on muuttuva ja se voi nousta tai laskea olosuhteiden mukaan. Pyri selittämään ilmiön taustalla olevat syyt selkeästi ja yksinkertaisesti. Vastaa vain suomeksi, älä käytä muita kieliä.`,
+      text: `Pörssisähkön hinta on tällä hetkellä ${prices} ja hintojen trendi on ${pricesTrend}. Huomioi seuraavat tekijät: ${promptData} Ottaen huomioon nämä tekijät, selitä, miksi sähkön hinta on ${prices} ja miten ne voivat vaikuttaa markkinoiden tilanteeseen. Muista, että hinta on muuttuva ja se voi nousta tai laskea olosuhteiden mukaan. Pyri selittämään ilmiön taustalla olevat syyt selkeästi ja yksinkertaisesti. Vastaa vain suomeksi, älä käytä muita kieliä.`,
     };
   } catch (error) {
     console.error("Error in buildPrompt:", error.message);

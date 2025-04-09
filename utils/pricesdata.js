@@ -1,3 +1,63 @@
+const fetchElectricityComparison = async () => {
+  const fetchElectricityPrices = async (start, end) => {
+    const apiUrl = `https://sahkotin.fi/prices?fix&vat&start=${start}&end=${end}`;
+    
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      const data = await response.json();
+      return data.prices.map(item => item.value / 10);
+    } catch (error) {
+      console.error("Error fetching electricity price:", error.message);
+      return [];
+    }
+  };
+
+  const calculateAverage = (prices) => {
+    return prices.reduce((total, price) => total + price, 0) / prices.length;
+  };
+
+  const getThreeMonthAverage = async () => {
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setMonth(today.getMonth() - 3);
+
+    const start = startDate.toISOString().split("T")[0] + "T00:00:00.000Z";
+    const end = today.toISOString().split("T")[0] + "T23:59:59.999Z";
+
+    const prices = await fetchElectricityPrices(start, end);
+    if (prices.length === 0) return null;
+
+    return calculateAverage(prices);
+  };
+
+  const getTodayAverage = async () => {
+    const today = new Date().toISOString().split("T")[0];
+    const start = `${today}T00:00:00.000Z`;
+    const end = `${today}T23:59:59.999Z`;
+
+    const prices = await fetchElectricityPrices(start, end);
+    if (prices.length === 0) return null;
+
+    return calculateAverage(prices);
+  };
+
+  const threeMonthAverage = await getThreeMonthAverage();
+  const todayAverage = await getTodayAverage();
+
+  if (threeMonthAverage === null || todayAverage === null) {
+    console.log("Not enough data available");
+    return "Ei tarpeeksi dataa";
+  }
+
+  const difference = todayAverage - threeMonthAverage;
+  const threshold = threeMonthAverage * 0.05;
+
+  if (difference > threshold) return "tavallista kalliimpaa";
+  if (difference < -threshold) return "tavallista edullisempaa";
+  return "normaalin hintaista";
+};
+
 const fetchElectricityTrend = async (period = 15) => {
   const fetchElectricityPrice = async () => {
     const today = new Date().toISOString().split("T")[0];
@@ -36,4 +96,4 @@ const fetchElectricityTrend = async (period = 15) => {
   return electricityTrend(prices, period);
 };
 
-module.exports = { fetchElectricityTrend };
+module.exports = { fetchElectricityComparison, fetchElectricityTrend };

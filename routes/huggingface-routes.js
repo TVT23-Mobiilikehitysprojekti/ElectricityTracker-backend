@@ -3,7 +3,7 @@ const { firestore } = require("../firebase/config");
 const { collection, getDocs, query, orderBy, limit, addDoc } = require("firebase/firestore");
 const { HfInference } = require("@huggingface/inference");
 const storage = require("node-persist");
-const { fetchElectricityTrend } = require("../utils/pricesdata");
+const { fetchElectricityComparison, fetchElectricityTrend } = require("../utils/pricesdata");
 const { buildPrompt } = require("../utils/prompt");
 
 
@@ -41,8 +41,10 @@ router.get("/summarize", async (req, res) => {
       return res.status(429).json({ error: "Rate limit exceeded. Try again after 24 hours." });
     }
 
+    const prices = await fetchElectricityComparison();
     const pricesTrend = await fetchElectricityTrend();
-    const promptText = await buildPrompt(pricesTrend);
+
+    const promptText = await buildPrompt(prices, pricesTrend);
     
     console.log("promptText:");
     console.log(promptText);
