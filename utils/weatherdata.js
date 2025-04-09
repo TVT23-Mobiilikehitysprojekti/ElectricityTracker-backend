@@ -64,11 +64,11 @@ export const fetchWeatherForCities = async () => {
 
 export const analyzeWeather = () => {
   const freezingTemperatures = {
-    "Northern Finland": siikajokiWeather.tempMin < 0,
-    "Southern Finland": helsinkiWeather.tempMin < 0,
-    "Baltics": rigaWeather.tempMin < 0,
-    "Scandinavia": osloWeather.tempMin < 0,
-    "Central Europe": berlinWeather.tempMin < 0,
+    "Pohjois-Suomi": siikajokiWeather.tempMin < 0,
+    "Etelä-Suomi": helsinkiWeather.tempMin < 0,
+    "Baltian maat": rigaWeather.tempMin < 0,
+    "Skandinavia": osloWeather.tempMin < 0,
+    "Keski-Eurooppa": berlinWeather.tempMin < 0,
   };
 
   const windSpeeds = [
