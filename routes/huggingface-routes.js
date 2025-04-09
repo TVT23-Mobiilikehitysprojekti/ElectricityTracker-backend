@@ -3,7 +3,8 @@ const { firestore } = require("../firebase/config");
 const { collection, getDocs, query, orderBy, limit, addDoc } = require("firebase/firestore");
 const { HfInference } = require("@huggingface/inference");
 const storage = require("node-persist");
-const promptText = require("../utils/prompt");
+const { buildPrompt } = require("../utils/prompt");
+
 
 const router = express.Router();
 
@@ -34,20 +35,25 @@ const rateLimiter = async () => {
 };
 
 router.get("/summarize", async (req, res) => {
-  const { text } = promptText;
-
-  if (!text) {
-    return res.status(400).json({ error: "Text is required for summarization." });
-  }
-
-  if (!(await rateLimiter())) {
-    return res.status(429).json({ error: "Rate limit exceeded. Try again after 24 hours." });
-  }
-
   try {
+    if (!(await rateLimiter())) {
+      return res.status(429).json({ error: "Rate limit exceeded. Try again after 24 hours." });
+    }
+
+    const prices = "nouseva";
+
+    const promptText = await buildPrompt(prices);
+
+    console.log("promptText:");
+    console.log(promptText);
+
+    if (!promptText || !promptText.text) {
+      throw new Error("Failed to construct prompt text");
+    }
+
     const response = await inference.textGeneration({
       model: "Finnish-NLP/Ahma-3B-Instruct",
-      inputs: text,
+      inputs: promptText.text,
       parameters: {
         max_new_tokens: 500,
         temperature: 0.5,
@@ -58,7 +64,7 @@ router.get("/summarize", async (req, res) => {
     const generatedText = response.generated_text || "No summary available.";
 
     const docRef = await addDoc(collection(firestore, "summaries"), {
-      input: text,
+      input: promptText.text,
       summary: generatedText,
       timestamp: new Date(),
     });
@@ -69,8 +75,8 @@ router.get("/summarize", async (req, res) => {
       summary: generatedText,
     });
   } catch (error) {
-    console.error("Error during summarization:", error);
-    res.status(500).json({ error: "Error processing text or saving to Firestore." });
+    console.error("Error in summarization route:", error);
+    res.status(500).json({ error: "Error processing request." });
   }
 });
 
