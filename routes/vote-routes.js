@@ -58,7 +58,7 @@ router.get('/votes', async (req, res) => {
             collection(firestore, 'votes'),
             where('newsId', '==', itemId)
         );
-        const querySnapshot = await getDocs(votesQuery);
+        const querySnapshot = await getDoc(votesQuery);
 
         const votes = querySnapshot.docs.map(doc => doc.data());
         return res.status(200).json(votes);
