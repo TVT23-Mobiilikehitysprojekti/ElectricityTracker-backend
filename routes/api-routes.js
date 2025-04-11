@@ -1,6 +1,5 @@
 const express = require("express");
 const axios = require("axios");
-const { cities } = require("../utils/weatherdata");
 
 const router = express.Router();
 
@@ -34,46 +33,37 @@ router.get("/location", async (req, res) => {
 });
 
 router.get("/weather", async (req, res) => {
-  const { city } = req.query;
+  const { city, cities } = req.query; 
   const WEATHER_API_KEY = process.env.OPENWEATHER_KEY;
 
-  if (!city) {
-    return res.status(400).json({ error: "City name is required." });
+  if (!city && !cities) {
+    return res.status(400).json({ error: "City name(s) are required." });
   }
 
   const fetchWeather = async (cityName) => {
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${WEATHER_API_KEY}`;
-
     try {
       const response = await axios.get(url);
       return {
+        city: cityName,
         temperature: Number((response.data.main.temp - 273.15).toFixed(2)),
-        tempMax: Number((response.data.main.temp_max - 273.15).toFixed(2)),
-        tempMin: Number((response.data.main.temp_min - 273.15).toFixed(2)),
         windSpeed: response.data.wind.speed,
         weather: response.data.weather[0].description,
-        city: cityName,
       };
     } catch (error) {
-      console.error("Error fetching weather:", error);
-      throw new Error("Error fetching weather data.");
+      console.error(`Error fetching weather for ${cityName}:`, error);
+      return { city: cityName, error: "Failed to fetch weather data." };
     }
   };
 
   try {
-    const weatherData = await fetchWeather(city);
-
-    cities.forEach((item) => {
-      if (item.name === city) {
-        item.temperature = weatherData.temperature;
-      }
-    });
-
-    console.log(cities);
-
+    const cityList = city ? [city] : cities.split(',');
+    const weatherPromises = cityList.map((cityName) => fetchWeather(cityName));
+    const weatherData = await Promise.all(weatherPromises);
     res.status(200).json(weatherData);
   } catch (error) {
-    handleError(res, error, "Error fetching weather data.");
+    console.error("Error fetching weather data:", error);
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
