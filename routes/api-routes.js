@@ -33,11 +33,11 @@ router.get("/location", async (req, res) => {
 });
 
 router.get("/weather", async (req, res) => {
-  const { cities } = req.query; 
+  const { city, cities } = req.query; 
   const WEATHER_API_KEY = process.env.OPENWEATHER_KEY;
 
-  if (!cities) {
-    return res.status(400).json({ error: "City names are required." });
+  if (!city && !cities) {
+    return res.status(400).json({ error: "City name(s) are required." });
   }
 
   const fetchWeather = async (cityName) => {
@@ -57,8 +57,8 @@ router.get("/weather", async (req, res) => {
   };
 
   try {
-    const cityList = cities.split(','); 
-    const weatherPromises = cityList.map((city) => fetchWeather(city));
+    const cityList = city ? [city] : cities.split(',');
+    const weatherPromises = cityList.map((cityName) => fetchWeather(cityName));
     const weatherData = await Promise.all(weatherPromises);
     res.status(200).json(weatherData);
   } catch (error) {
