@@ -67,15 +67,4 @@ router.get("/weather", async (req, res) => {
   }
 });
 
-router.get("/news", async (req, res) => {
-  const NEWS_API_KEY = process.env.NEWSDATA_KEY;
-
-  try {
-    const response = await axios.get(`https://newsdata.io/api/1/news?apikey=${NEWS_API_KEY}&q=electricity&country=fi`);
-    res.json(response.data.results);
-  } catch (error) {
-    handleError(res, error, "Failed to fetch news.");
-  }
-});
-
 module.exports = router;
