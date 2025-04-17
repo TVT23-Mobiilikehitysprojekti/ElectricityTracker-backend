@@ -1,4 +1,6 @@
 const { fetchWeatherForCities, analyzeWeather } = require("./weatherdata");
+const { fetchElectricityComparison, fetchElectricityTrend, getTodayAveragePrice } = require("./pricesdata");
+const { getElectricityData } = require("./pricesabroad");
 
 let promptDataArray = [];
 
@@ -6,7 +8,7 @@ function addTextToPromptData(newText) {
   promptDataArray.push(newText);
 }
 
-async function buildPrompt(prices, pricesTrend) {
+async function buildPrompt() {
   try {
     await fetchWeatherForCities();
     const { freezingTemperatures, windSpeedCategory } = analyzeWeather();
@@ -37,9 +39,20 @@ async function buildPrompt(prices, pricesTrend) {
     }
     addTextToPromptData(windStatement);
 
+    const prices = await fetchElectricityComparison();
+    const pricesTrend = await fetchElectricityTrend();
+    
+    const finlandAveragePrice = await getTodayAveragePrice();
+
+    const { estonianPrice, swedishPrice } = await getElectricityData(finlandAveragePrice);
+
+    const foreignPrices = `Ulkomailla sähkön hinta on Virossa ${estonianPrice} ja Ruotsissa ${swedishPrice}, jolla voi olla epäsuora vaikutus sähkön hintaan Suomessa.`;
+    addTextToPromptData(foreignPrices);
+
     const promptData = promptDataArray.join(" ");
+
     return {
-      text: `Pörssisähkön hinta on tällä hetkellä ${prices} ja hintojen trendi on ${pricesTrend}. Huomioi seuraavat tekijät: ${promptData} Ottaen huomioon nämä tekijät, selitä, miksi sähkön hinta on ${prices} ja miten ne voivat vaikuttaa markkinoiden tilanteeseen. Muista, että hinta on muuttuva ja se voi nousta tai laskea olosuhteiden mukaan. Pyri selittämään ilmiön taustalla olevat syyt selkeästi ja yksinkertaisesti. Vastaa vain suomeksi, älä käytä muita kieliä.`,
+      text: `Pörssisähkön hinta on tällä hetkellä ${prices}, ollen tänään ${finlandAveragePrice.toFixed(2)} snt/kWh ja hintojen trendi kuukauden ajalta on ollut ${pricesTrend}. Huomioi seuraavat tekijät: ${promptData} Ottaen huomioon nämä tekijät, selitä miten ne voivat vaikuttaa markkinoiden tilanteeseen. Muista, että hinta on muuttuva ja se voi nousta tai laskea olosuhteiden mukaan. Pyri selittämään ilmiön taustalla olevat syyt selkeästi ja yksinkertaisesti. Vastaa vain suomeksi, älä käytä muita kieliä.`,
     };
   } catch (error) {
     console.error("Error in buildPrompt:", error.message);

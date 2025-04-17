@@ -4,7 +4,7 @@ const { XMLParser } = require("fast-xml-parser");
 
 const router = express.Router();
 
-if (!process.env.GEOAPIFY_KEY || !process.env.OPENWEATHER_KEY || !process.env.NEWSDATA_KEY || !process.env.ENTSOE_API_KEY) {
+if (!process.env.GEOAPIFY_KEY || !process.env.OPENWEATHER_KEY || !process.env.ENTSOE_API_KEY) {
   console.error("Missing required environment variables.");
   process.exit(1);
 }
