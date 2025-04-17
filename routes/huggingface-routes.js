@@ -20,13 +20,24 @@ if (!process.env.HUGGINGFACE_API_KEY) {
 const inference = new HfInference(process.env.HUGGINGFACE_API_KEY);
 
 const rateLimiter = async () => {
-  const now = Date.now();
+  const now = new Date();
+  const currentTimestamp = now.getTime();
+
+  const cutoffTime = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    5, 0, 0
+  ).getTime();
+
   try {
     const lastRequestTimestamp = await storage.getItem("lastRequestTimestamp");
-    if (!lastRequestTimestamp || now - lastRequestTimestamp >= 24 * 60 * 60 * 1000) {
-      await storage.setItem("lastRequestTimestamp", now);
+
+    if (!lastRequestTimestamp || lastRequestTimestamp < cutoffTime) {
+      await storage.setItem("lastRequestTimestamp", currentTimestamp);
       return true;
     }
+
     return false;
   } catch (error) {
     console.error("Rate limiter error:", error);
@@ -34,10 +45,11 @@ const rateLimiter = async () => {
   }
 };
 
+
 router.get("/summarize", async (req, res) => {
   try {
     if (!(await rateLimiter())) {
-      return res.status(429).json({ error: "Rate limit exceeded. Try again after 24 hours." });
+      return res.status(429).json({ error: "Rate limit exceeded. Try again tomorrow." });
     }
 
     const promptText = await buildPrompt();
